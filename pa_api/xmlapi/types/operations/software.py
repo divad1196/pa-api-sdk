@@ -1,43 +1,25 @@
-from dataclasses import dataclass
-from datetime import datetime
+from typing import Optional
 
-from pa_api.utils import (
-    first,
-)
+from pydantic import ConfigDict, Field
+
 from pa_api.xmlapi.types.utils import (
-    mksx,
-    pd,
+    Bool,
+    Datetime,
+    String,
+    XMLBaseModel,
 )
 
 
-@dataclass
-class SoftwareVersion:
-    # TODO: Use pydantic
-    version: str
-    filename: str
-    released_on: datetime
-    downloaded: bool
-    current: bool
-    latest: bool
-    uploaded: bool
+class SoftwareVersion(XMLBaseModel):
+    model_config = ConfigDict(extra="ignore")
 
-    @staticmethod
-    def from_xml(xml):
-        # TODO: Use correct pydantic functionalities
-        if isinstance(xml, (list, tuple)):
-            xml = first(xml)
-        if xml is None:
-            return None
-        p = mksx(xml)
-        return SoftwareVersion(
-            p("./version/text()"),
-            p("./filename/text()"),
-            p("./released-on/text()", parser=pd),
-            p("./downloaded/text()") != "no",
-            p("./current/text()") != "no",
-            p("./latest/text()") != "no",
-            p("./uploaded/text()") != "no",
-        )
+    version: String
+    filename: String
+    released_on: Optional[Datetime] = Field(alias="released-on")
+    downloaded: Bool
+    current: Bool
+    latest: Bool
+    uploaded: Bool
 
     @property
     def base_minor_version(self) -> str:
