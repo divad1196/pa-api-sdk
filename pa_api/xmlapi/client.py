@@ -936,12 +936,20 @@ class XMLApi:
         entries = self._raw_get_vpn_flows(name=name).xpath(".//IPSec/entry")
         return [types.VPNFlow.from_xml(e) for e in entries]
 
-    def system_info(self):
+    def _raw_system_info(self):
         """
         Returns informations about the system as a XML object.
         """
         cmd = "<show><system><info></info></system></show>"
         return self.operation(cmd)
+
+    def system_info(self) -> types.operations.SystemInfo:
+        """
+        Returns informations about the system as a XML object.
+        """
+        xml = self._raw_system_info()
+        info = xml.xpath("./result/system")[0]
+        return types.operations.SystemInfo.from_xml(info)
 
     def _raw_system_resources(self):
         """
