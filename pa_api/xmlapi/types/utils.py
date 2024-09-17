@@ -29,7 +29,7 @@ class XMLBaseModel(BaseModel):
 
 def parse_datetime(d):
     try:
-        if d is None or d == "none":
+        if d is None or d in ("none", "Unknown"):
             return None
         return datetime.strptime(d, DATETIME_FORMAT)
     except Exception as e:
@@ -102,6 +102,12 @@ List = Annotated[typing.List[Element], BeforeValidator(ensure_list)]
 # print(ta.validate_python())
 
 
+def xml_text(v: Any):
+    if isinstance(v, dict) and "#text" in v:
+        return v["#text"]
+    return v
+
+
 def ensure_str(v: Any) -> str:
     if v is None:
         return ""
@@ -119,6 +125,7 @@ def validate_ip(v: Any) -> str:
 
 
 String = Annotated[str, BeforeValidator(ensure_str)]
+Bool = Annotated[bool, BeforeValidator(xml_text)]
 Ip = Annotated[str, BeforeValidator(validate_ip)]
 
 
