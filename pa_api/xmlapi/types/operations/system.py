@@ -1,4 +1,3 @@
-
 from pydantic import ConfigDict, Field
 
 from pa_api.xmlapi.types.utils import (
