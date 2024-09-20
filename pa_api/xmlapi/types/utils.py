@@ -23,8 +23,8 @@ NoneType: type = type(None)
 class XMLBaseModel(BaseModel):
     @classmethod
     def from_xml(cls, xml) -> Self:
-        rulebase = first(el2dict(xml).values())
-        return cls.model_validate(rulebase)
+        data = first(el2dict(xml).values())
+        return cls.model_validate(data)
 
 
 def parse_datetime(d):
@@ -94,12 +94,6 @@ def ensure_list(v: Any) -> typing.List[Any]:
 Element = TypeVar("Element", bound=Any)
 # Similar to typing.List, but ensure to always return a list
 List = Annotated[typing.List[Element], BeforeValidator(ensure_list)]
-
-# from pydantic import TypeAdapter
-# ta = TypeAdapter(List[int])
-# print(ta.validate_python(5))
-# print(ta.validate_python([5]))
-# print(ta.validate_python())
 
 
 def xml_text(v: Any):
