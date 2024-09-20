@@ -195,13 +195,6 @@ class Ethernet(XMLBaseModel):
         if self.layer3:
             yield from self.layer3.flatten(parent)
 
-    # @model_validator(mode="before")
-    # @classmethod
-    # def test(cls, data):
-    #     print("\n" * 5)
-    #     print("Ethernet:", data)
-    #     return data
-
 
 class AggregateEthernet(XMLBaseModel):
     model_config = ConfigDict(extra="allow")
@@ -229,12 +222,6 @@ class AggregateEthernet(XMLBaseModel):
         validation_alias=AliasPath("tag", "member"),
         default_factory=list,
     )
-    # @model_validator(mode="before")
-    # @classmethod
-    # def test(cls, data):
-    #     print("\n" * 5)
-    #     print("AggregateEthernet:", data)
-    #     return data
 
     def flatten(self, parent=None) -> Iterable[GenericInterface]:
         if self.name:

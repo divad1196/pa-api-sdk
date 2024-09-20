@@ -2,14 +2,7 @@ from typing import Optional
 
 from pydantic import AliasPath, ConfigDict, Field
 
-from pa_api.utils import (
-    first,
-)
-from pa_api.xmlapi.types.utils import (
-    Datetime,
-    XMLBaseModel,
-    mksx,
-)
+from pa_api.xmlapi.types.utils import Datetime, XMLBaseModel
 
 
 class Device(XMLBaseModel):
@@ -119,56 +112,3 @@ class VPNFlow(XMLBaseModel):
     state: str
     mon: str
     owner: str
-
-
-class HAInfo(XMLBaseModel):
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-    enabled: bool
-    preemptive: Optional[bool] = None
-    mode: Optional[str] = None
-    state: Optional[str] = None
-    peer_state: Optional[str] = None
-    priority: Optional[int] = None
-    peer_priority: Optional[int] = None
-    is_primary: Optional[bool] = None
-    peer_conn_status: Optional[str] = None
-    mgmt_ip: Optional[str] = None
-    ha1_ipaddr: Optional[str] = None
-    ha1_backup_ipaddr: Optional[str] = None
-    ha2_ipaddr: Optional[str] = None
-    ha1_macaddress: Optional[str] = None
-    ha1_backup_macaddress: Optional[str] = None
-    ha2_macaddress: Optional[str] = None
-
-    @classmethod
-    def from_xml(cls, xml):
-        # TODO: Use correct pydantic functionalities
-        if isinstance(xml, (list, tuple)):
-            xml = first(xml)
-        if xml is None:
-            return None
-        p = mksx(xml)
-        priority = p("./group/local-info/priority/text()", parser=int)
-        peer_priority = p("./group/peer-info/priority/text()", parser=int)
-        is_primary = None
-        if priority is not None and peer_priority is not None:
-            is_primary = priority < peer_priority
-        return HAInfo(
-            enabled=p("./enabled/text()"),
-            preemptive=p("./group/local-info/preemptive/text()"),
-            mode=p("./group/local-info/mode/text()"),
-            state=p("./group/local-info/state/text()"),
-            peer_state=p("./group/peer-info/state/text()"),
-            priority=priority,
-            peer_priority=peer_priority,
-            is_primary=is_primary,
-            peer_conn_status=p("./group/peer-info/conn-status/text()"),
-            mgmt_ip=p("./group/local-info/mgmt-ip/text()"),
-            ha1_ipaddr=p("./group/local-info/ha1-ipaddr/text()"),
-            ha1_backup_ipaddr=p("./group/local-info/ha1-backup-ipaddr/text()"),
-            ha2_ipaddr=p("./group/local-info/ha2-ipaddr/text()"),
-            ha1_macaddress=p("./group/local-info/ha1-macaddr/text()"),
-            ha1_backup_macaddress=p("./group/local-info/ha1-backup-macaddr/text()"),
-            ha2_macaddress=p("./group/local-info/ha2-macaddr/text()"),
-        )
