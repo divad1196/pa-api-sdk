@@ -15,8 +15,9 @@ from typing_extensions import Self, TypedDict
 from pa_api.utils import first
 from pa_api.xmlapi.utils import el2dict
 
-DATETIME_FORMAT = "%Y/%m/%d %H:%M:%S"
 TIME_FORMAT = "%H:%M:%S"
+DATETIME_FORMAT = f"%Y/%m/%d {TIME_FORMAT}"
+DATETIME_MS_FORMAT = f"{DATETIME_FORMAT}.%f"
 NoneType: type = type(None)
 
 
@@ -31,11 +32,14 @@ def parse_datetime(d):
     try:
         if d is None or d in ("none", "Unknown"):
             return None
-        return datetime.strptime(d, DATETIME_FORMAT)
+        try:
+            return datetime.strptime(d, DATETIME_FORMAT)
+        except Exception:
+            return datetime.strptime(d, DATETIME_MS_FORMAT)
     except Exception as e:
         logging.debug(e)
         logging.debug(f"Failed to parse {d} as datetime")
-        print(d, type(d))
+        # print(d, type(d))
         raise
     return d
 
