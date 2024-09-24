@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import Any, Optional
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, model_validator
 
 from pa_api.xmlapi.types.utils import String, XMLBaseModel
 
@@ -44,4 +44,13 @@ class HAInfo(XMLBaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
     enabled: bool
-    group: Optional[HAGroup]
+    group: Optional[HAGroup] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def ensure_group_none_if_disabled(cls, data: dict) -> Any:
+        if isinstance(data, dict):
+            enabled = data.get("enabled")
+            if not enabled or enabled != "yes":
+                return {"enabled": "no"}
+        return data
