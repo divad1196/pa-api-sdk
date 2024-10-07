@@ -7,6 +7,7 @@ from pa_api.utils import clean_url_host, first, get_credentials_from_env
 
 from . import types
 from .base import _get_rule_use_cmd, get_tree, raw_request
+from .exceptions import ServerError
 from .utils import (
     Element,
     el2dict,
@@ -1043,7 +1044,12 @@ class XMLApi:
         For automatic install, see `automatic_software_upgrade`
         """
         version_str = version
-        versions = self.get_versions()
+        try:
+            versions = self.get_versions()
+        except ServerError:
+            raise Exception(
+                "An error occured on the device while retrieving the device's versions. Be sure that the device can contact PaloAlto's servers."
+            )
         sw_version = None
         if not version_str:
             sw_version = next((v for v in versions if v.latest), None)
