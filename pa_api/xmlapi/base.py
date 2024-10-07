@@ -5,6 +5,7 @@ import requests
 
 from pa_api.constants import SUCCESS_CODE
 
+from .exceptions import ServerError
 from .utils import Element, detach, etree_fromstring, etree_tostring
 
 
@@ -131,7 +132,7 @@ def raw_request(
     msg = parse_msg_result(tree)
     if status == "error" or code < SUCCESS_CODE:
         logger.debug(content[:500])
-        raise Exception(msg)
+        raise ServerError(msg)
     if msg:
         return msg
     return tree
