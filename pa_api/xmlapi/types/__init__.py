@@ -4,7 +4,10 @@ from pa_api.utils import (
 
 from .config import (
     Address,
+    AddressGroup,
     AggregateEthernet,
+    Configuration,
+    CustomUrlCategory,
     DeviceGroup,
     Ethernet,
     GenericInterface,
@@ -18,6 +21,7 @@ from .config import (
     Vlan,
     Zone,
 )
+from .logs import Log, LogJob
 from .operations import (
     Device,
     HAInfo,
