@@ -1,13 +1,17 @@
 import logging
+from contextlib import contextmanager
 from itertools import chain, product
 from multiprocessing.pool import ThreadPool as Pool
 from typing import List, Optional, Tuple, Union
+
+import requests
+import urllib3
 
 from pa_api.utils import clean_url_host, first, get_credentials_from_env
 
 from . import types
 from .base import _get_rule_use_cmd, get_tree, raw_request
-from .exceptions import ServerError
+from .exceptions import ServerError, UnsuspendError
 from .utils import (
     Element,
     el2dict,
@@ -1094,7 +1098,11 @@ class XMLApi:
         return sw_version
 
     def automatic_software_upgrade(
-        self, version: Optional[str] = None, install: bool = True, restart: bool = True
+        self,
+        version: Optional[str] = None,
+        install: bool = True,
+        restart: bool = True,
+        suspend: bool = False,
     ):
         """
         Automatically download and install the requested software version.
@@ -1119,20 +1127,85 @@ class XMLApi:
         # This should never happen, we decided to report the error and handle this manually
         self.logger.info(f"Launching install of version {sw_version.version}")
 
-        job_id = self.install_software(sw_version.version)
-        if not job_id:
-            self.logger.error("Install has not started")
-            raise Exception("Install has not started")
-        job = self.wait_job_completion(job_id)
-        self.logger.info(job.details)
+        with self.suspended(suspend):
+            job_id = self.install_software(sw_version.version)
+            if not job_id:
+                self.logger.error("Install has not started")
+                raise Exception("Install has not started")
+            job = self.wait_job_completion(job_id)
+            self.logger.info(job.details)
 
-        # Do not restart if install failed
-        if job.result != "OK":
-            self.logger.error("Failed to install software version")
+            # Do not restart if install failed
+            if job.result != "OK":
+                self.logger.error("Failed to install software version")
+                return sw_version
+
+            if restart:
+                self.logger.info("Restarting the device")
+                restart_response = self.restart()
+                self.logger.info(restart_response)
             return sw_version
 
-        if restart:
-            self.logger.info("Restarting the device")
-            restart_response = self.restart()
-            self.logger.info(restart_response)
-        return sw_version
+    @contextmanager
+    def suspended(self, suspend=True):
+        if not suspend:
+            try:
+                yield self
+            finally:
+                return
+        self.logger.info("Suspending device")
+        self.set_ha_status(active=False)
+        try:
+            yield self
+        finally:
+            self.check_availability()
+            self.logger.info("Unsuspending device...")
+            for _ in range(3):
+                try:
+                    self.set_ha_status(active=True)
+                    break
+                except Exception as e:
+                    self.logger.error(e)
+                    # time.sleep()
+            else:
+                raise UnsuspendError("Failed to unsuspend device")
+            self.logger.info("Device successfully unsuspended")
+
+    def wait_availability(self):
+        logger = self.logger
+        logger.info("Checking availability. Waiting for response...")
+        max_duration = 1800
+        for duration in wait(duration=max_duration):
+            try:
+                versions = self.get_versions()
+                current = next(v for v in versions if v.current)
+                if current is None:
+                    logger.warning("Device is not not answering")
+                else:
+                    logger.info(f"Device responded after {duration} seconds")
+                    return current
+            except (
+                urllib3.exceptions.MaxRetryError,
+                requests.exceptions.ConnectionError,
+            ):
+                logger.warning("Firewall still not responding")
+            except ServerError:
+                raise Exception(
+                    "An error occured on the device while retrieving the device's versions. Be sure that the device can contact PaloAlto's servers."
+                )
+            except Exception as e:
+                logger.debug(f"Unexpected error of type {type(e)} occured on firewall")
+                logger.error(f"Firewall is still not responding: {e}")
+        raise Exception(
+            f"Timeout while waiting for availability of firewall. Waited for {max_duration} seconds"
+        )
+
+    def check_availability(self):
+        logger = self.logger
+        ## Wait for the FW to respond
+        version = self.wait_availability()
+        if not version:
+            logger.error("Device never responded")
+            return False
+        logger.info(f"Firewall is available on version {version.version}")
+        return True
