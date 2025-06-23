@@ -162,7 +162,13 @@ def ensure_str(v: Any) -> str:
     if v is None:
         return ""
     if isinstance(v, dict):
-        return v["#text"]
+        text = v.get("#text")
+        if text:
+            return text
+        lines = v.get("line")
+        if lines is not None:
+            return "\n".join(lines)
+        raise Exception(f"Cannot convert value to string: {v}")
     return v
 
 
