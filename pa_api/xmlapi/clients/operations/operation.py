@@ -1,10 +1,9 @@
+from datetime import datetime
 from typing import List, Optional, Union
 
 from pa_api.xmlapi import types
 from pa_api.xmlapi.clients.base import ClientProxy
-from pa_api.xmlapi.utils import (
-    Element,
-)
+from pa_api.xmlapi.utils import Element, etree_tostring
 
 from .config import Config
 from .ha import HA
@@ -89,6 +88,29 @@ class Operation(ClientProxy):
         filter = "<connected></connected>" if connected else "<all></all>"
         cmd = f"<show><devices>{filter}</devices></show>"
         return self._request(cmd)
+
+    def refresh_edl(self, name) -> Job:
+        """
+        Trigger a refresh of an EDL and return the
+        """
+        edl_id = f"<type><ip><name>{name}</name></ip></type>"
+        edl_cmd = f"<refresh>{edl_id}</refresh>"
+        cmd = f"<request><system><external-list>{edl_cmd}</external-list></system></request>"
+
+        # Request the refresh
+        before = datetime.now()
+        _refresh_response = self(cmd)
+        print(etree_tostring(_refresh_response).decode())
+        # after = datetime.now()
+
+        # Search for the job
+        # The refresh request does not show the job ID
+        all_jobs = self.job.get_jobs()
+        # return before, after, all_jobs
+        _refresh_jobs = (j for j in all_jobs if j.type == "EDLRefresh")
+        # refresh_jobs = (j for j in refresh_jobs if before <= j.tenq)
+        refresh_jobs = sorted(_refresh_jobs, (lambda j: j.tenq or before), reverse=True)
+        return next(refresh_jobs)
 
     def get_devices(self, connected=False) -> List[types.Device]:
         """

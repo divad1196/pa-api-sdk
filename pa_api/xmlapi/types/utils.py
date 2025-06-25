@@ -59,6 +59,7 @@ class XMLBaseModel(BaseModel):
 
     @classmethod
     def from_xml(cls, xml) -> Self:
+        # print(etree_tostring(xml))
         data = first(el2dict(xml).values())
         # context = {}
         # if client is not None:
@@ -82,7 +83,7 @@ class ObjectBaseModel(XMLBaseModel):
 
 def parse_datetime(d):
     try:
-        if d is None or d in ("none", "Unknown"):
+        if d is None or d in ("none", "Unknown", "(null)"):
             return None
         try:
             return datetime.strptime(d, DATETIME_FORMAT)

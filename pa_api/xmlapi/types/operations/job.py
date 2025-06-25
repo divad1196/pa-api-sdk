@@ -1,22 +1,17 @@
 import enum
 import logging
 from dataclasses import dataclass
-from datetime import datetime, time
+from datetime import time
 from typing import Annotated, Optional
 
-from pydantic import Field, ConfigDict, PlainValidator
+from pydantic import ConfigDict, Field, PlainValidator
 
-from pa_api.utils import (
-    first,
-)
 from pa_api.xmlapi.types.utils import (
-    XMLBaseModel,
-    mksx,
-    parse_datetime,
-    parse_time,
-    pd,
     Datetime,
     String,
+    XMLBaseModel,
+    parse_datetime,
+    parse_time,
 )
 
 
@@ -41,7 +36,10 @@ def parse_progress(progress):
         return 100.0
     return None
 
+
 Progress = Annotated[float, PlainValidator(parse_progress)]
+Time = Annotated[time, PlainValidator(parse_tdeq)]
+
 
 class JobResult(enum.Enum):
     OK = "OK"
@@ -55,19 +53,19 @@ class Job(XMLBaseModel):
         # alias_generator=lambda name: name.replace("-", "_")
     )
     # TODO: Use pydantic
-    tenq: Datetime
-    tdeq: time
-    id: str
-    user: String
+    tenq: Optional[Datetime] = None
+    tdeq: Optional[Time] = None
+    id: str = ""
+    user: String = ""
     type: str
-    status: str
-    queued: bool
-    stoppable: bool
-    result: str
-    tfin: Datetime
+    status: str = ""
+    queued: bool = False
+    stoppable: bool = False
+    result: str = ""
+    tfin: Optional[Datetime] = None
     description: String = ""
-    position_in_queue: int = Field(alias="positionInQ", default=None)
-    progress: Progress
+    position_in_queue: int = Field(alias="positionInQ", default=-1)
+    progress: Progress = 0.0
     details: String = ""
     warnings: String = ""
 

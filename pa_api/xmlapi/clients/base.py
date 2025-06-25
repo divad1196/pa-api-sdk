@@ -18,6 +18,7 @@ class BaseXMLApiClient:
         host=None,
         api_key=None,
         ispanorama=None,
+        target=None,
         verify=False,
         timeout=None,
         logger=None,
@@ -31,12 +32,17 @@ class BaseXMLApiClient:
             raise Exception("Missing API Key")
         host, _, _ = clean_url_host(host)
 
+        default_params = {}
+        if target:
+            default_params["target"] = target
+
         self._host = host
         self._api_key = api_key
         self._url = f"{host}/api"
         self._verify = verify
         self._timeout = timeout
         self._ispanorama = ispanorama
+        self._default_params = default_params
         self.logger = logger or logging
 
         self._post_init()
@@ -57,6 +63,7 @@ class BaseXMLApiClient:
         if timeout is None:
             timeout = self._timeout
         headers = {"X-PAN-KEY": self._api_key}
+        params = {**self._default_params, **(params or {})}
         return raw_request(
             self._url,
             type,
