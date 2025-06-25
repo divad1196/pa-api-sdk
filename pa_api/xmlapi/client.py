@@ -8,17 +8,17 @@ import requests
 import urllib3
 
 from pa_api.utils import clean_url_host, first, get_credentials_from_env
-
-from . import types
-from .base import _get_rule_use_cmd, get_tree, raw_request
-from .exceptions import ServerError, UnsuspendError
-from .utils import (
+from pa_api.xmlapi.base import _get_rule_use_cmd, get_tree, raw_request
+from pa_api.xmlapi.exceptions import ServerError
+from pa_api.xmlapi.utils import (
     Element,
     el2dict,
     extend_element,
     map_dicts,
     wait,
 )
+
+from . import types
 
 
 class XMLApi:
@@ -27,6 +27,7 @@ class XMLApi:
         host=None,
         api_key=None,
         ispanorama=None,
+        target=None,
         verify=False,
         timeout=None,
         logger=None,
@@ -40,12 +41,17 @@ class XMLApi:
             raise Exception("Missing API Key")
         host, _, _ = clean_url_host(host)
 
+        default_params = {}
+        if target:
+            default_params["target"] = target
+
         self._host = host
         self._api_key = api_key
         self._url = f"{host}/api"
         self._verify = verify
         self._timeout = timeout
         self._ispanorama = ispanorama
+        self._default_params = default_params
         self.logger = logger or logging
 
     def _request(
@@ -65,6 +71,7 @@ class XMLApi:
         if timeout is None:
             timeout = self._timeout
         headers = {"X-PAN-KEY": self._api_key}
+        params = {**self._default_params, **(params or {})}
         return raw_request(
             self._url,
             type,

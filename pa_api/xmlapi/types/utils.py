@@ -3,9 +3,12 @@ import logging
 import typing
 from datetime import datetime
 from types import new_class
-from typing import Annotated, Any, Optional, TypeVar
+from typing import TYPE_CHECKING, Annotated, Any, Optional, TypeVar
 
-from pydantic import BaseModel, TypeAdapter
+from pydantic import (
+    BaseModel,
+    TypeAdapter,
+)
 from pydantic.functional_validators import (
     BeforeValidator,
     PlainValidator,
@@ -20,17 +23,67 @@ DATETIME_FORMAT = f"%Y/%m/%d {TIME_FORMAT}"
 DATETIME_MS_FORMAT = f"{DATETIME_FORMAT}.%f"
 NoneType: type = type(None)
 
+if TYPE_CHECKING:
+    from pa_api.xmlapi.clients import Client
+
 
 class XMLBaseModel(BaseModel):
+    # raw_xml: Optional[Any] = None
+
+    # @model_validator(mode="before")
+    # @classmethod
+    # def _get_raw_xml(cls, data, info: ValidationInfo):
+    #     if isinstance(info.context, dict):
+    #         raw_xml = info.context.get("raw_xml")
+    #         if raw_xml is not None:
+    #             data["raw_xml"] = raw_xml
+    #     return data
+
+    # @classmethod
+    # def from_xml(cls, xml) -> Self:
+    #     data = first(el2dict(xml).values())
+    #     return cls.model_validate(data, context={"raw_xml": xml})
+
+    # _client: Optional["Client"]
+    # def bind_client(self, client: Optional["Client"]):
+    #     self._client = client
+    #     return self
+
+    # @model_validator(mode="after")
+    # def _auto_bind_client(self, info: ValidationInfo):
+    #     client = None
+    #     if isinstance(info.context, dict):
+    #         client = info.context.get("client")
+    #     self.bind_client(client)
+    #     return self
+
     @classmethod
     def from_xml(cls, xml) -> Self:
+        # print(etree_tostring(xml))
         data = first(el2dict(xml).values())
-        return cls.model_validate(data)
+        # context = {}
+        # if client is not None:
+        #     context["client"] = client
+        return cls.model_validate(data)  # , context=context
+
+
+class ObjectBaseModel(XMLBaseModel):
+    def _remove_member(self, subpath, client: "Client", member: str, rulebase=None):
+        """
+        Remove the member from destination.
+
+        NOTE: Rulebase information is required for panorama
+        """
+        subpath = subpath.strip("/")
+        rule_xpath = self.get_xpath(rulebase)
+        # panorama_rule_xpath = f"/config/devices/entry/vsys/entry/rulebase/security/rules/entry[@uuid='{self.uuid}']"
+        member_xpath = f"{rule_xpath}/{subpath}/member[text()='{member}']"
+        return client.configuration.delete(member_xpath)
 
 
 def parse_datetime(d):
     try:
-        if d is None or d in ("none", "Unknown"):
+        if d is None or d in ("none", "Unknown", "(null)"):
             return None
         try:
             return datetime.strptime(d, DATETIME_FORMAT)
@@ -110,7 +163,13 @@ def ensure_str(v: Any) -> str:
     if v is None:
         return ""
     if isinstance(v, dict):
-        return v["#text"]
+        text = v.get("#text")
+        if text:
+            return text
+        lines = v.get("line")
+        if lines is not None:
+            return "\n".join(lines)
+        raise Exception(f"Cannot convert value to string: {v}")
     return v
 
 

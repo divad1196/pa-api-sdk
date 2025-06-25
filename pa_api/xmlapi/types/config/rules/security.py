@@ -1,8 +1,11 @@
-from typing import Literal, Optional
+from typing import TYPE_CHECKING, Literal, Optional
 
 from pydantic import AliasPath, ConfigDict, Field
 
-from pa_api.xmlapi.types.utils import List, String, XMLBaseModel
+from pa_api.xmlapi.types.utils import List, ObjectBaseModel, String, XMLBaseModel
+
+if TYPE_CHECKING:
+    from pa_api.xmlapi.clients import Client
 
 
 class ProfileSetting(XMLBaseModel):
@@ -21,7 +24,60 @@ class Target(XMLBaseModel):
     negate: Optional[bool] = None
 
 
-class Security(XMLBaseModel):
+class Security(ObjectBaseModel):
+    @property
+    def xpath(self):
+        return self.get_xpath()
+
+    def get_xpath(self, rulebase=None):
+        if rulebase is None:
+            rulebase = "*[self::pre-rulebase or self::post-rulebase]"
+        return f"/config/devices/entry/device-group/entry/{rulebase}/security/rules/entry[@uuid='{self.uuid}']"
+
+    # def add_destination_member(self, client: "Client", member: str):
+    #     return client.configuration.create(f"{self.xpath}/destination", f"<member>{member}</member>")
+
+    def _remove_member(self, member_type, client: "Client", member: str, rulebase=None):
+        """
+        Remove the member from destination.
+
+        NOTE: Rulebase information is required for panorama
+        """
+        rule_xpath = self.get_xpath(rulebase)
+        # panorama_rule_xpath = f"/config/devices/entry/vsys/entry/rulebase/security/rules/entry[@uuid='{self.uuid}']"
+        member_xpath = f"{rule_xpath}/{member_type}/member[text()='{member}']"
+        return client.configuration.delete(member_xpath)
+
+    def remove_destination_member(self, client: "Client", member: str, rulebase=None):
+        return self._remove_member("destination", client, member, rulebase=rulebase)
+
+    def remove_source_member(self, client: "Client", member: str, rulebase=None):
+        return self._remove_member("source", client, member, rulebase=rulebase)
+
+    # def remove_destination_members(
+    #     self, client: "Client", members: Union[str, Iterable[str]], rulebase=None
+    # ):
+    #     # We cannot direclty edit members, we need to replace the whole object with its new configuration
+    #     # pre-rulebase is required
+    #     if isinstance(members, str):
+    #         members = {members}
+    #     if not isinstance(members, set):
+    #         members_to_remove = set(members)
+    #     if not members:
+    #         return
+
+    #     rule_xpath = self.get_xpath(rulebase)
+    #     rule = client.configuration.get(rule_xpath).xpath("/response/result/entry")[0]
+    #     destination = rule.xpath(".//destination")[0]
+    #     nodes_to_remove = [
+    #         m
+    #         for m in destination.getchildren()
+    #         if m.tag == "member" and m.text in members_to_remove
+    #     ]
+    #     for n in nodes_to_remove:
+    #         destination.remove(n)
+    #     client.configuration.replace(rule_xpath, etree_tostring(rule))
+
     model_config = ConfigDict(extra="allow")
 
     name: String = Field(validation_alias="@name")

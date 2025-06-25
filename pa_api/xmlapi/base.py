@@ -1,9 +1,8 @@
 import logging
-from typing import Union
 
 import requests
 
-from pa_api.constants import SUCCESS_CODE
+from pa_api.constants import PANORAMA_ERRORS, SUCCESS_CODE
 
 from .exceptions import ServerError
 from .utils import Element, detach, etree_fromstring, etree_tostring
@@ -94,7 +93,7 @@ def raw_request(
     parse=True,
     stream=None,
     timeout=None,
-) -> Union[str, Element]:
+) -> Element:
     """
     This function is a wrapper around requests.method.
     It returns:
@@ -126,13 +125,30 @@ def raw_request(
     if not parse:
         return res
     content = res.content.decode()
+    # try:
+    #     tree = etree_fromstring(content, remove_blank_text=remove_blank_text)
+    # except lxml.etree.XMLSyntaxError:
+    #     print(content[:500])
     tree = etree_fromstring(content, remove_blank_text=remove_blank_text)
     status = tree.attrib["status"]
     code = int(tree.get("code", SUCCESS_CODE))
-    msg = parse_msg_result(tree)
     if status == "error" or code < SUCCESS_CODE:
         logger.debug(content[:500])
-        raise ServerError(msg)
-    if msg:
-        return msg
+        # print(content[:500])
+        msg = parse_msg_result(tree)
+        if msg:
+            raise ServerError(msg)
+        msg = PANORAMA_ERRORS.get(code)
+        if msg is None:
+            msg = f"Unknown error with code {code} occured"
+        raise Exception(msg)
+
+    # if tree.tag == "response":
+    #     children = tree.getchildren()
+    #     if len(children) == 1:
+    #         tree = children[0]
+    # if tree.tag == "result":
+    #     children = tree.getchildren()
+    #     if len(children) == 1:
+    #         tree = children[0]
     return tree

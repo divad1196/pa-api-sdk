@@ -1,17 +1,17 @@
 import enum
 import logging
 from dataclasses import dataclass
-from datetime import datetime, time
-from typing import Optional
+from datetime import time
+from typing import Annotated, Optional
 
-from pa_api.utils import (
-    first,
-)
+from pydantic import ConfigDict, Field, PlainValidator
+
 from pa_api.xmlapi.types.utils import (
-    mksx,
+    Datetime,
+    String,
+    XMLBaseModel,
     parse_datetime,
     parse_time,
-    pd,
 )
 
 
@@ -37,52 +37,60 @@ def parse_progress(progress):
     return None
 
 
+Progress = Annotated[float, PlainValidator(parse_progress)]
+Time = Annotated[time, PlainValidator(parse_tdeq)]
+
+
 class JobResult(enum.Enum):
     OK = "OK"
     FAIL = "FAIL"
 
 
 @dataclass
-class Job:
+class Job(XMLBaseModel):
+    model_config = ConfigDict(
+        # https://docs.pydantic.dev/2.0/api/alias_generators/
+        # alias_generator=lambda name: name.replace("-", "_")
+    )
     # TODO: Use pydantic
-    tenq: datetime
-    tdeq: time
-    id: str
-    user: str
+    tenq: Optional[Datetime] = None
+    tdeq: Optional[Time] = None
+    id: str = ""
+    user: String = ""
     type: str
-    status: str
-    queued: bool
-    stoppable: bool
-    result: str
-    tfin: datetime
-    description: str
-    position_in_queue: int
-    progress: float
-    details: str
-    warnings: str
+    status: str = ""
+    queued: bool = False
+    stoppable: bool = False
+    result: str = ""
+    tfin: Optional[Datetime] = None
+    description: String = ""
+    position_in_queue: int = Field(alias="positionInQ", default=-1)
+    progress: Progress = 0.0
+    details: String = ""
+    warnings: String = ""
 
-    @staticmethod
-    def from_xml(xml) -> Optional["Job"]:
-        # TODO: Use correct pydantic functionalities
-        if isinstance(xml, (list, tuple)):
-            xml = first(xml)
-        if xml is None:
-            return None
-        p = mksx(xml)
-        return Job(
-            p("./tenq/text()", parser=pd),
-            p("./tdeq/text()", parser=parse_tdeq),
-            p("./id/text()"),
-            p("./user/text()"),
-            p("./type/text()"),
-            p("./status/text()"),
-            p("./queued/text()") != "NO",
-            p("./stoppable/text()") != "NO",
-            p("./result/text()"),
-            p("./tfin/text()", parser=pd),
-            p("./description/text()"),
-            p("./positionInQ/text()", parser=int),
-            p("./progress/text()", parser=parse_progress),
-            "\n".join(xml.xpath("./details/line/text()")),
-            p("./warnings/text()"),
-        )
+    # @staticmethod
+    # def from_xml(xml) -> Optional["Job"]:
+    #     # TODO: Use correct pydantic functionalities
+    #     if isinstance(xml, (list, tuple)):
+    #         xml = first(xml)
+    #     if xml is None:
+    #         return None
+    #     p = mksx(xml)
+    #     return Job(
+    #         tenq=p("./tenq/text()", parser=pd),
+    #         tdeq=p("./tdeq/text()", parser=parse_tdeq),
+    #         id=p("./id/text()"),
+    #         user=p("./user/text()"),
+    #         type=p("./type/text()"),
+    #         status=p("./status/text()"),
+    #         queued=p("./queued/text()") != "NO",
+    #         stoppable=p("./stoppable/text()") != "NO",
+    #         result=p("./result/text()"),
+    #         tfin=p("./tfin/text()", parser=pd),
+    #         description=p("./description/text()"),
+    #         position_in_queue=p("./positionInQ/text()", parser=int),
+    #         progress=p("./progress/text()", parser=parse_progress),
+    #         details="\n".join(xml.xpath("./details/line/text()")),
+    #         warnings=p("./warnings/text()"),
+    #     )
