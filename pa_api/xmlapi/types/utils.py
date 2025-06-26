@@ -168,6 +168,8 @@ def ensure_str(v: Any) -> str:
             return text
         lines = v.get("line")
         if lines is not None:
+            if isinstance(lines, str):
+                return lines
             return "\n".join(lines)
         raise Exception(f"Cannot convert value to string: {v}")
     return v
