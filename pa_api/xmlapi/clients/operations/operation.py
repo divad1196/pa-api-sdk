@@ -3,7 +3,7 @@ from typing import List, Optional, Union
 
 from pa_api.xmlapi import types
 from pa_api.xmlapi.clients.base import ClientProxy
-from pa_api.xmlapi.utils import Element, etree_tostring
+from pa_api.xmlapi.utils import Element
 
 from .config import Config
 from .ha import HA
@@ -89,7 +89,7 @@ class Operation(ClientProxy):
         cmd = f"<show><devices>{filter}</devices></show>"
         return self._request(cmd)
 
-    def refresh_edl(self, name) -> Job:
+    def refresh_edl(self, name) -> types.Job:
         """
         Trigger a refresh of an EDL and return the
         """
@@ -100,7 +100,7 @@ class Operation(ClientProxy):
         # Request the refresh
         before = datetime.now()
         _refresh_response = self(cmd)
-        print(etree_tostring(_refresh_response).decode())
+        # print(etree_tostring(_refresh_response).decode())
         # after = datetime.now()
 
         # Search for the job
@@ -109,8 +109,10 @@ class Operation(ClientProxy):
         # return before, after, all_jobs
         _refresh_jobs = (j for j in all_jobs if j.type == "EDLRefresh")
         # refresh_jobs = (j for j in refresh_jobs if before <= j.tenq)
-        refresh_jobs = sorted(_refresh_jobs, (lambda j: j.tenq or before), reverse=True)
-        return next(refresh_jobs)
+        refresh_jobs = sorted(
+            _refresh_jobs, key=lambda j: j.tenq or before, reverse=True
+        )
+        return next(iter(refresh_jobs))
 
     def get_devices(self, connected=False) -> List[types.Device]:
         """
