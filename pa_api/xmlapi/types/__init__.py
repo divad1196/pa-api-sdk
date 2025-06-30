@@ -24,6 +24,7 @@ from .config import (
 from .logs import Log, LogJob
 from .operations import (
     Device,
+    EDLMembers,
     HAInfo,
     Job,
     JobResult,
