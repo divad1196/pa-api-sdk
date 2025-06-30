@@ -61,6 +61,7 @@ class XMLBaseModel(BaseModel):
     def from_xml(cls, xml) -> Self:
         # print(etree_tostring(xml))
         data = first(el2dict(xml).values())
+        # print(data)
         # context = {}
         # if client is not None:
         #     context["client"] = client

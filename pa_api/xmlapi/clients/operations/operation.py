@@ -89,11 +89,18 @@ class Operation(ClientProxy):
         cmd = f"<show><devices>{filter}</devices></show>"
         return self._request(cmd)
 
-    def refresh_edl(self, name) -> types.Job:
+    def _edl_id(self, name: str, type: Optional[str] = None) -> str:
         """
         Trigger a refresh of an EDL and return the
         """
-        edl_id = f"<type><ip><name>{name}</name></ip></type>"
+        type = type or "ip"
+        return f"<type><{type}><name>{name}</name></{type}></type>"
+
+    def refresh_edl(self, name: str, type: Optional[str] = None) -> types.Job:
+        """
+        Trigger a refresh of an EDL and return the
+        """
+        edl_id = self._edl_id(name, type=type)
         edl_cmd = f"<refresh>{edl_id}</refresh>"
         cmd = f"<request><system><external-list>{edl_cmd}</external-list></system></request>"
 
@@ -113,6 +120,20 @@ class Operation(ClientProxy):
             _refresh_jobs, key=lambda j: j.tenq or before, reverse=True
         )
         return next(iter(refresh_jobs))
+
+    def show_edl_members(self, name: str, type: Optional[str] = None) -> types.Job:
+        """
+        Trigger a refresh of an EDL and return the
+        """
+        edl_id = self._edl_id(name, type=type)
+        edl_cmd = f"<show>{edl_id}</show>"
+        cmd = f"<request><system><external-list>{edl_cmd}</external-list></system></request>"
+
+        res = self(cmd)
+        # print(etree_tostring(res).decode())
+        entries = res.xpath(".//external-list")
+        data = (types.EDLMembers.from_xml(e) for e in entries)
+        return next(data)
 
     def get_devices(self, connected=False) -> List[types.Device]:
         """
