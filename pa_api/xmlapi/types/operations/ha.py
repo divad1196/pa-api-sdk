@@ -12,7 +12,7 @@ class HALocalInfo(XMLBaseModel):
     preemptive: bool
     state: str
     mode: String
-    ha1_backup_macaddr: str = Field(alias="ha1-backup-macaddr")
+    ha1_backup_macaddr: Optional[str] = Field(alias="ha1-backup-macaddr", default=None)
     ha1_macaddr: str = Field(alias="ha1-macaddr")
     mgmt_ip: str = Field(alias="mgmt-ip")
 
@@ -24,7 +24,7 @@ class HAPeerInfo(XMLBaseModel):
     state: str
     mode: str
     conn_status: str = Field(alias="conn-status")
-    ha1_backup_macaddr: str = Field(alias="ha1-backup-macaddr")
+    ha1_backup_macaddr: Optional[str] = Field(alias="ha1-backup-macaddr", default=None)
     ha1_macaddr: str = Field(alias="ha1-macaddr")
     mgmt_ip: str = Field(alias="mgmt-ip")
 
