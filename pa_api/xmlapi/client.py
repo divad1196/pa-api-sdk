@@ -9,7 +9,7 @@ import urllib3
 
 from pa_api.utils import clean_url_host, first, get_credentials_from_env
 from pa_api.xmlapi.base import _get_rule_use_cmd, get_tree, raw_request
-from pa_api.xmlapi.exceptions import ServerError
+from pa_api.xmlapi.exceptions import ServerError, UnsuspendError
 from pa_api.xmlapi.utils import (
     Element,
     el2dict,

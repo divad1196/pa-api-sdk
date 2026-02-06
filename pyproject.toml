@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pa-api-sdk"
-version = "0.1.9"
+version = "0.1.12"
 description = ""
 authors = ["David Gallay <david.gallay.96@gmail.com>"]
 readme = "README.md"

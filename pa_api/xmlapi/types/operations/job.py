@@ -1,6 +1,5 @@
 import enum
 import logging
-from dataclasses import dataclass
 from datetime import time
 from typing import Annotated, Optional
 
@@ -46,18 +45,17 @@ class JobResult(enum.Enum):
     FAIL = "FAIL"
 
 
-@dataclass
 class Job(XMLBaseModel):
     model_config = ConfigDict(
         # https://docs.pydantic.dev/2.0/api/alias_generators/
         # alias_generator=lambda name: name.replace("-", "_")
     )
     # TODO: Use pydantic
+    type: str
     tenq: Optional[Datetime] = None
     tdeq: Optional[Time] = None
     id: str = ""
     user: String = ""
-    type: str
     status: str = ""
     queued: bool = False
     stoppable: bool = False
@@ -68,29 +66,3 @@ class Job(XMLBaseModel):
     progress: Progress = 0.0
     details: String = ""
     warnings: String = ""
-
-    # @staticmethod
-    # def from_xml(xml) -> Optional["Job"]:
-    #     # TODO: Use correct pydantic functionalities
-    #     if isinstance(xml, (list, tuple)):
-    #         xml = first(xml)
-    #     if xml is None:
-    #         return None
-    #     p = mksx(xml)
-    #     return Job(
-    #         tenq=p("./tenq/text()", parser=pd),
-    #         tdeq=p("./tdeq/text()", parser=parse_tdeq),
-    #         id=p("./id/text()"),
-    #         user=p("./user/text()"),
-    #         type=p("./type/text()"),
-    #         status=p("./status/text()"),
-    #         queued=p("./queued/text()") != "NO",
-    #         stoppable=p("./stoppable/text()") != "NO",
-    #         result=p("./result/text()"),
-    #         tfin=p("./tfin/text()", parser=pd),
-    #         description=p("./description/text()"),
-    #         position_in_queue=p("./positionInQ/text()", parser=int),
-    #         progress=p("./progress/text()", parser=parse_progress),
-    #         details="\n".join(xml.xpath("./details/line/text()")),
-    #         warnings=p("./warnings/text()"),
-    #     )

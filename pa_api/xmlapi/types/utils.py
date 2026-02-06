@@ -61,6 +61,7 @@ class XMLBaseModel(BaseModel):
     def from_xml(cls, xml) -> Self:
         # print(etree_tostring(xml))
         data = first(el2dict(xml).values())
+        # print(data)
         # context = {}
         # if client is not None:
         #     context["client"] = client
@@ -168,6 +169,8 @@ def ensure_str(v: Any) -> str:
             return text
         lines = v.get("line")
         if lines is not None:
+            if isinstance(lines, str):
+                return lines
             return "\n".join(lines)
         raise Exception(f"Cannot convert value to string: {v}")
     return v
